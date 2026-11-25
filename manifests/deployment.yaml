@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: foodfinda
-          image: sreelakshmins2004/foodfinda:latest
+          image: sreelakshmins2004/foodfinda:4
           imagePullPolicy: Always
           ports:
             - containerPort: 80
