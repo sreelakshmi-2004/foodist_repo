@@ -11,7 +11,7 @@ pipeline {
 
         // Update this URL if your actual manifest repository
         // has a different name.
-        MANIFEST_REPO         = 'https://github.com/sreelakshmi-2004/foodfinda_pipeline.git'
+        MANIFEST_REPO         = 'https://github.com/sreelakshmi-2004/foodist_repo.git'
         MANIFEST_BRANCH       = 'main'
     }
 
