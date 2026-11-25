@@ -5,12 +5,12 @@ pipeline {
     environment {
         DOCKER_CREDENTIALS_ID = 'docker-cred'
         DOCKER_IMAGE          = 'sreelakshmins2004/foodfinda'
+
         SONAR_SERVER_NAME     = 'sonarqube-env'
         SONAR_SCANNER_TOOL    = 'sonar-scanner'
+
         GIT_CREDENTIALS_ID    = 'github-cred'
 
-        // Update this URL if your actual manifest repository
-        // has a different name.
         MANIFEST_REPO         = 'https://github.com/sreelakshmi-2004/foodist_repo.git'
         MANIFEST_BRANCH       = 'main'
     }
@@ -21,6 +21,7 @@ pipeline {
         stage('Checkout Source Code') {
             steps {
                 checkout scm
+
                 echo 'Foodfinda source code checked out successfully!'
             }
         }
@@ -35,7 +36,7 @@ pipeline {
                         sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=foodfinda-key \
-                            -Dsonar.projectName='foodfinda-project' \
+                            -Dsonar.projectName=foodfinda-project \
                             -Dsonar.sources=.
                         """
                     }
@@ -61,7 +62,7 @@ pipeline {
                             docker build \
                             -t ${DOCKER_IMAGE}:${env.BUILD_NUMBER} \
                             -t ${DOCKER_IMAGE}:latest \
-                            -f ./Dockerfile .
+                            -f Dockerfile .
 
                             docker push ${DOCKER_IMAGE}:${env.BUILD_NUMBER}
                             docker push ${DOCKER_IMAGE}:latest
@@ -78,6 +79,7 @@ pipeline {
             steps {
                 dir('manifest-workspace') {
 
+                    // Checkout manifest repository using GitHub credentials
                     checkout([
                         $class: 'GitSCM',
                         branches: [[name: "*/${MANIFEST_BRANCH}"]],
@@ -87,7 +89,10 @@ pipeline {
                         ]]
                     ])
 
+                    // Update Docker image tag and prepare commit
                     sh """
+                        set -e
+
                         sed -i '/name: foodfinda/{n;s|image:.*|image: ${DOCKER_IMAGE}:${env.BUILD_NUMBER}|;}' manifests/deployment.yaml
 
                         git config user.name "sreelakshmi-2004"
@@ -95,15 +100,30 @@ pipeline {
 
                         git add manifests/deployment.yaml
 
-                        git commit -m "chore(manifest): update foodfinda image tag to ${env.BUILD_NUMBER} [skip ci]"
-
-                        git push origin HEAD:${MANIFEST_BRANCH}
+                        if ! git diff --cached --quiet; then
+                            git commit -m "Update Foodfinda image to build ${env.BUILD_NUMBER} [skip ci]"
+                        else
+                            echo "No manifest changes to commit."
+                        fi
                     """
+
+                    // Push using GitHub credentials
+                    withCredentials([
+                        gitUsernamePassword(
+                            credentialsId: "${GIT_CREDENTIALS_ID}",
+                            gitToolName: 'Default'
+                        )
+                    ]) {
+                        sh """
+                            git push origin HEAD:${MANIFEST_BRANCH}
+                        """
+                    }
                 }
             }
         }
     }
 
+    // Pipeline result
     post {
         success {
             echo 'Foodfinda pipeline executed successfully! Manifest repository updated.'
@@ -111,6 +131,10 @@ pipeline {
 
         failure {
             echo 'Foodfinda pipeline failed. Please check the stage logs.'
+        }
+
+        always {
+            echo 'Foodfinda pipeline execution completed.'
         }
     }
 }
