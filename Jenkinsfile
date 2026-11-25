@@ -97,7 +97,7 @@ pipeline {
 
                         git commit -m "chore(manifest): update foodfinda image tag to ${env.BUILD_NUMBER} [skip ci]"
 
-                        git push origin ${MANIFEST_BRANCH}
+                        git push origin HEAD:${MANIFEST_BRANCH}
                     """
                 }
             }
