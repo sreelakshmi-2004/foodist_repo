@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: foodfinda-service
+  name: foodfinda-deployment
   namespace: argocd
   labels:
     app: foodfinda
